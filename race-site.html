@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Norwell Labor Day Road Race</title>
+
+<!-- Fill in (search "EDIT"):
+     1. Banner image: --banner-image in :root
+     2. Date: the hero + nothing else is fabricated
+     3. Registration URL: every link with class "reg-link"
+     (Mapbox token, course route, and elevation are already set.) -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800;900&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
+<style>
+:root{
+  /* Norwell Clippers — royal blue & gold (EDIT) */
+  --blue:        #0d3b8a;
+  --blue-deep:   #07224f;
+  --gold:        #c8941f;
+  --gold-bright: #e3b23c;
+  --cream:       #f6f1e7;
+  --cream-2:     #efe7d6;
+  --ink:         #11203b;
+
+  /* Banner image (EDIT: url('your-photo.jpg') or none) */
+  --banner-image: url('pathway.avif');
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Archivo',sans-serif;background:var(--cream);color:var(--ink);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1140px;margin:0 auto;padding:0 30px}
+.disp{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;line-height:.9;letter-spacing:.005em}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:10px;background:var(--gold);color:var(--blue-deep);font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase;padding:15px 26px;border:0;cursor:pointer;transition:transform .15s ease,background .2s ease}
+.btn:hover{background:var(--gold-bright);transform:translateY(-2px)}
+.btn-lg{padding:20px 44px;font-size:15px}
+
+/* Top bar */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:18px 30px;transition:background .3s ease,padding .3s ease,border-color .3s ease;border-bottom:1px solid transparent}
+.topbar.scrolled{background:var(--blue-deep);padding:12px 30px;border-bottom:1px solid rgba(227,178,60,.4)}
+.topbar .mark{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;color:#fff;font-size:17px;letter-spacing:.04em}
+.topbar .mark span{color:var(--gold-bright)}
+.top-reg{color:#fff;font-weight:700;font-size:12px;letter-spacing:.14em;text-transform:uppercase;border-bottom:2px solid var(--gold);padding-bottom:3px;transition:color .2s}
+.top-reg:hover{color:var(--gold-bright)}
+
+/* Hero */
+.hero{position:relative;min-height:100vh;display:flex;align-items:flex-end;background:var(--blue-deep);overflow:hidden}
+.hero-fallback{position:absolute;inset:0;z-index:0;background:radial-gradient(130% 100% at 75% 0%, var(--blue) 0%, var(--blue-deep) 60%)}
+.hero-img{position:absolute;inset:0;z-index:0;background-image:var(--banner-image);background-size:cover;background-position:center}
+.hero-shade{position:absolute;inset:0;z-index:1;background:
+  linear-gradient(180deg, rgba(7,34,79,.10) 0%, rgba(7,34,79,0) 30%, rgba(7,34,79,.55) 66%, rgba(7,34,79,.97) 100%),
+  linear-gradient(90deg, rgba(7,34,79,.72) 0%, rgba(7,34,79,.30) 44%, rgba(7,34,79,0) 72%)}
+.hero-inner{position:relative;z-index:2;width:100%;max-width:1140px;margin:0 auto;padding:0 30px 64px}
+.kicker{display:inline-flex;align-items:center;gap:12px;color:var(--gold-bright);font-weight:700;letter-spacing:.26em;text-transform:uppercase;font-size:12px;margin-bottom:22px;opacity:0;animation:rise .7s .1s ease forwards;text-shadow:0 1px 6px rgba(7,34,79,.6)}
+.hero h1{color:#fff;font-family:'Big Shoulders Display',sans-serif;font-weight:900;text-transform:uppercase;line-height:.82;letter-spacing:.005em;font-size:clamp(3.4rem,12vw,9rem);opacity:0;animation:rise .8s .2s ease forwards;text-shadow:0 2px 24px rgba(7,34,79,.55), 0 1px 3px rgba(0,0,0,.4)}
+.hero h1 em{font-style:normal;color:var(--gold-bright)}
+.facts{display:flex;align-items:center;flex-wrap:wrap;gap:0;margin-top:38px;opacity:0;animation:rise .8s .45s ease forwards}
+.fact{display:flex;flex-direction:column;padding:4px 30px;border-left:2px solid rgba(227,178,60,.55)}
+.fact:first-of-type{padding-left:0;border-left:0}
+.fl{color:rgba(255,255,255,.65);font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;margin-bottom:6px}
+.fv{font-family:'Big Shoulders Display',sans-serif;font-weight:700;color:#fff;font-size:24px;text-transform:uppercase;letter-spacing:.01em}
+.facts .btn{margin-left:30px}
+@media(max-width:640px){.facts{gap:18px}.fact{border-left:0;padding:0}.facts .btn{margin-left:0}}
+
+@keyframes rise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:translateY(0)}}
+
+/* Details section */
+.details-sec{background:var(--cream);padding:104px 0 72px}
+.details{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(13,59,138,.18);border:1px solid rgba(13,59,138,.18);margin-top:40px}
+@media(max-width:640px){.details{grid-template-columns:1fr}}
+.d-item{background:var(--cream);padding:26px 28px;display:flex;flex-direction:column}
+.dv{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:29px;color:var(--blue);line-height:1.04}
+.d-sub{margin-top:7px;font-size:13px;color:#6b7891;font-weight:600;letter-spacing:.02em}
+
+/* Course section */
+.course-sec{background:var(--cream);padding:34px 0 104px}
+.sec-head{display:flex;align-items:flex-end;gap:20px;border-bottom:2px solid var(--blue);padding-bottom:18px}
+.sec-title{font-family:'Big Shoulders Display',sans-serif;font-weight:900;text-transform:uppercase;color:var(--blue);font-size:clamp(2.4rem,6vw,4.4rem);line-height:.9}
+.course-lead{max-width:680px;font-size:1.18rem;line-height:1.6;color:#33425e;margin-top:26px}
+
+/* Map + elevation frame */
+.map-frame{margin-top:40px;border:2px solid var(--blue)}
+#map{width:100%;height:500px;background:var(--blue-deep);position:relative}
+@media(max-width:760px){#map{height:380px}}
+.map-fallback{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;color:#fff;background:var(--blue);gap:12px}
+.map-fallback.show{display:flex}
+.map-fallback code{background:rgba(255,255,255,.14);padding:3px 8px;font-size:13px}
+
+.legend{display:flex;gap:24px;flex-wrap:wrap;align-items:center;background:var(--blue);border-top:2px solid var(--blue);padding:14px 22px}
+.legend span{display:flex;align-items:center;gap:8px;font-size:12px;color:rgba(255,255,255,.85);font-weight:600;letter-spacing:.02em}
+.dot{width:12px;height:12px;border-radius:50%}
+
+/* Elevation card */
+.elevation{background:var(--blue-deep);color:#fff;padding:28px 30px}
+.elev-head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:12px;margin-bottom:18px}
+.elev-head h3{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;font-size:22px;letter-spacing:.03em}
+.elev-stats{display:flex;gap:24px;flex-wrap:wrap}
+.elev-stats span{font-size:12px;color:rgba(255,255,255,.6);letter-spacing:.04em;text-transform:uppercase}
+.elev-stats b{font-family:'Big Shoulders Display',sans-serif;font-weight:700;color:var(--gold-bright);font-size:19px;margin-right:6px}
+.elev-chart{position:relative;width:100%}
+.elev-chart svg{width:100%;height:auto;display:block;cursor:crosshair}
+.elev-msg{padding:38px 0;text-align:center;color:rgba(255,255,255,.45);font-size:14px}
+.elev-tip{position:absolute;pointer-events:none;background:var(--blue);border:1px solid var(--gold);padding:6px 10px;font-size:12px;line-height:1.35;transform:translate(-50%,-130%);white-space:nowrap;opacity:0;transition:opacity .1s}
+.elev-tip b{color:var(--gold-bright);font-weight:700}
+.elev-foot{margin-top:14px;font-size:12px;color:rgba(255,255,255,.42);line-height:1.5}
+
+/* Course stats strip */
+.course-stats{display:flex;flex-wrap:wrap;gap:0;margin-top:30px;border-top:1px solid rgba(13,59,138,.2)}
+.cstat{display:flex;flex-direction:column;padding:20px 40px 4px 0;margin-right:40px}
+.cl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:800;margin-bottom:8px}
+.cv{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:34px;color:var(--blue);line-height:1}
+
+/* Register band */
+.register{position:relative;background:var(--blue);color:#fff;text-align:center;padding:120px 30px;overflow:hidden}
+.reg-deco{position:absolute;inset:0;z-index:0;opacity:.5}
+.reg-deco svg{width:100%;height:100%}
+.reg-inner{position:relative;z-index:1}
+.register h2{font-family:'Big Shoulders Display',sans-serif;font-weight:900;text-transform:uppercase;font-size:clamp(2.6rem,8vw,6rem);line-height:.86;margin-bottom:30px}
+.register h2 em{font-style:normal;color:var(--gold-bright)}
+
+/* Footer */
+footer{background:var(--blue-deep);color:#fff;padding:40px 0}
+.foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px}
+.foot-mark{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;font-size:18px;letter-spacing:.03em}
+.foot-loc{color:rgba(255,255,255,.5);font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+.foot a{color:var(--gold-bright);font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase}
+</style>
+</head><body>
+
+<!-- Top bar -->
+<header class="topbar" id="nav">
+  <a href="#top" class="mark">Norwell <span>Labor Day Road Race</span></a>
+  <!-- EDIT: registration URL -->
+  <a href="https://your-registration-link.com" class="top-reg reg-link" target="_blank" rel="noopener">Register</a>
+</header>
+
+<!-- Hero -->
+<section class="hero" id="top">
+  <div class="hero-fallback"></div>
+  <div class="hero-img"></div>
+  <div class="hero-shade"></div>
+  <div class="hero-inner">
+    <div class="kicker">Norwell, Massachusetts</div>
+    <h1>Norwell<br>Labor&nbsp;Day<br><em>Road&nbsp;Race</em></h1>
+    <div class="facts">
+      <div class="fact"><span class="fl">Date</span><span class="fv">Sept 7, 2026</span></div>
+      <div class="fact"><span class="fl">Start</span><span class="fv">8:30 AM</span></div>
+      <div class="fact"><span class="fl">Distance</span><span class="fv">4.2 Miles</span></div>
+      <!-- EDIT: registration URL -->
+      <a href="https://your-registration-link.com" class="btn reg-link" target="_blank" rel="noopener">Register</a>
+    </div>
+  </div>
+</section>
+
+<!-- Details -->
+<section class="details-sec" id="details">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 class="sec-title">Details</h2>
+    </div>
+    <div class="details">
+      <div class="d-item"><span class="cl">Date</span><span class="dv">Monday, September 7, 2026</span><span class="d-sub">Labor Day</span></div>
+      <div class="d-item"><span class="cl">Start Time</span><span class="dv">8:30 AM</span></div>
+      <div class="d-item"><span class="cl">Start &amp; Finish</span><span class="dv">Norwell High School</span></div>
+      <div class="d-item"><span class="cl">Distance</span><span class="dv">4.2 Miles</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- The course -->
+<section class="course-sec" id="course">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 class="sec-title">The Course</h2>
+    </div>
+    <p class="course-lead">4.2 miles through Norwell with 279 feet of climbing. Trace the elevation profile below to see where the hills fall &mdash; the marker follows along the map.</p>
+
+    <div class="map-frame">
+      <div id="map">
+        <div class="map-fallback" id="mapFallback">
+          <strong style="font-size:18px">Map unavailable</strong>
+          <span style="color:rgba(255,255,255,.7);font-size:14px;max-width:380px">The Mapbox token may need a URL restriction added for this domain.</span>
+        </div>
+      </div>
+      <div class="legend">
+        <span><span class="dot" style="background:#22c55e"></span>Start</span>
+        <span><span class="dot" style="background:#ef4444"></span>Finish</span>
+        <span><span class="dot" style="background:#c8941f"></span>Mile marker</span>
+        <span><span class="dot" style="background:#fff;border:2px solid #c8941f"></span>Your position</span>
+      </div>
+      <div class="elevation" id="elevation">
+        <div class="elev-head">
+          <h3>Elevation</h3>
+          <div class="elev-stats" id="elevStats"></div>
+        </div>
+        <div class="elev-chart" id="elevChart">
+          <div class="elev-msg" id="elevMsg">Loading elevation&hellip;</div>
+        </div>
+        <div class="elev-foot">Gold segments mark the climbs. Hover or tap the profile to read distance and elevation.</div>
+      </div>
+    </div>
+
+    <div class="course-stats">
+      <div class="cstat"><span class="cl">Distance</span><span class="cv">4.2 mi</span></div>
+      <div class="cstat"><span class="cl">Elevation Gain</span><span class="cv" id="statElev">+279 ft</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- Register -->
+<section class="register" id="register">
+  <div class="reg-deco">
+    <svg viewBox="0 0 1200 360" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#e3b23c" stroke-width="1.5">
+      <path d="M-20 250 C 200 200 380 280 600 240 S 1000 180 1240 240"/>
+      <path d="M-20 290 C 220 240 400 320 620 280 S 1020 220 1240 280" opacity=".7"/>
+      <path d="M-20 210 C 240 160 420 240 640 200 S 1040 140 1240 200" opacity=".5"/>
+    </svg>
+  </div>
+  <div class="wrap reg-inner">
+    <h2>Run <em>it.</em></h2>
+    <!-- EDIT: registration URL -->
+    <a href="https://your-registration-link.com" class="btn btn-lg reg-link" target="_blank" rel="noopener">Register Now</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <span class="foot-mark">Norwell Labor Day Road Race</span>
+    <span class="foot-loc">Norwell, Massachusetts</span>
+    <!-- EDIT: registration URL -->
+    <a href="https://your-registration-link.com" class="reg-link" target="_blank" rel="noopener">Register</a>
+  </div>
+</footer>
+
+<script>
+/* 1. EDIT: your Mapbox access token (free at account.mapbox.com) */
+const MAPBOX_TOKEN = 'pk.eyJ1Ijoicm1hcnQ3ODY2IiwiYSI6ImNtcHNxYmN0MzFjaXAycHB0ZDVqcGlob2cifQ.uvWqgSJRvR797SikWKdosg';
+
+/* 2. EDIT: your real course as a GeoJSON LineString.
+      Coordinates are [longitude, latitude]. Export from Strava,
+      onthegomap, or geojson.io and paste the coordinates array.
+      The sample below is placeholder geometry, not a real course. */
+const COURSE = {
+  type: 'Feature',
+  geometry: {
+    type: 'LineString',
+    coordinates: [
+      [-70.83988, 42.15585],
+      [-70.83987, 42.15585],
+      [-70.83984, 42.15575],
+      [-70.83977, 42.15563],
+      [-70.83964, 42.15549],
+      [-70.83953, 42.15538],
+      [-70.83936, 42.15528],
+      [-70.83921, 42.15521],
+      [-70.83861, 42.155],
+      [-70.83855, 42.15498],
+      [-70.83812, 42.15476],
+      [-70.83794, 42.15463],
+      [-70.83767, 42.15438],
+      [-70.83719, 42.15388],
+      [-70.83708, 42.15379],
+      [-70.83688, 42.15368],
+      [-70.83685, 42.15367],
+      [-70.83666, 42.15359],
+      [-70.83643, 42.15356],
+      [-70.83592, 42.15359],
+      [-70.83496, 42.15367],
+      [-70.83483, 42.15369],
+      [-70.83481, 42.1535],
+      [-70.83479, 42.15329],
+      [-70.83478, 42.15303],
+      [-70.83476, 42.15276],
+      [-70.83475, 42.15244],
+      [-70.83473, 42.15205],
+      [-70.83471, 42.15151],
+      [-70.8347, 42.15135],
+      [-70.83466, 42.15001],
+      [-70.83462, 42.14973],
+      [-70.83454, 42.14946],
+      [-70.83445, 42.14921],
+      [-70.83428, 42.14885],
+      [-70.83403, 42.14835],
+      [-70.83393, 42.14816],
+      [-70.83379, 42.14789],
+      [-70.83361, 42.14754],
+      [-70.83356, 42.14746],
+      [-70.83343, 42.14719],
+      [-70.83336, 42.14698],
+      [-70.83336, 42.14688],
+      [-70.83337, 42.14681],
+      [-70.83338, 42.14678],
+      [-70.83316, 42.14674],
+      [-70.83293, 42.14674],
+      [-70.83249, 42.14678],
+      [-70.83212, 42.14682],
+      [-70.83192, 42.14684],
+      [-70.83168, 42.14688],
+      [-70.83117, 42.14695],
+      [-70.83099, 42.14699],
+      [-70.83085, 42.14703],
+      [-70.83078, 42.14704],
+      [-70.83041, 42.14714],
+      [-70.82983, 42.14731],
+      [-70.82957, 42.14738],
+      [-70.82911, 42.14751],
+      [-70.82879, 42.14759],
+      [-70.82866, 42.14763],
+      [-70.82818, 42.14778],
+      [-70.82783, 42.14785],
+      [-70.82759, 42.14788],
+      [-70.82746, 42.14788],
+      [-70.82734, 42.14788],
+      [-70.82713, 42.14786],
+      [-70.82682, 42.14779],
+      [-70.82653, 42.14767],
+      [-70.82606, 42.14744],
+      [-70.8259, 42.14737],
+      [-70.82585, 42.14736],
+      [-70.82556, 42.14727],
+      [-70.82534, 42.14725],
+      [-70.8249, 42.14727],
+      [-70.82479, 42.14728],
+      [-70.82397, 42.14722],
+      [-70.82329, 42.14717],
+      [-70.82297, 42.14715],
+      [-70.82256, 42.14714],
+      [-70.8223, 42.14715],
+      [-70.8221, 42.14718],
+      [-70.82183, 42.14725],
+      [-70.82172, 42.14727],
+      [-70.82143, 42.14739],
+      [-70.82123, 42.14746],
+      [-70.82089, 42.14758],
+      [-70.82008, 42.14787],
+      [-70.81963, 42.14803],
+      [-70.81829, 42.14859],
+      [-70.81788, 42.14879],
+      [-70.81767, 42.14897],
+      [-70.81745, 42.14914],
+      [-70.81708, 42.14931],
+      [-70.81671, 42.14938],
+      [-70.81623, 42.14942],
+      [-70.81596, 42.14946],
+      [-70.81576, 42.14951],
+      [-70.81536, 42.14965],
+      [-70.81517, 42.14977],
+      [-70.81482, 42.15004],
+      [-70.81443, 42.15038],
+      [-70.81424, 42.1505],
+      [-70.81262, 42.15152],
+      [-70.81189, 42.15199],
+      [-70.81184, 42.15203],
+      [-70.81194, 42.15218],
+      [-70.81196, 42.1526],
+      [-70.81201, 42.15283],
+      [-70.81208, 42.15302],
+      [-70.81231, 42.15337],
+      [-70.81239, 42.15334],
+      [-70.81244, 42.15334],
+      [-70.8126, 42.15353],
+      [-70.81264, 42.15357],
+      [-70.8127, 42.15359],
+      [-70.81276, 42.15359],
+      [-70.81295, 42.15355],
+      [-70.81309, 42.15357],
+      [-70.8132, 42.1536],
+      [-70.81352, 42.15384],
+      [-70.81359, 42.15387],
+      [-70.81389, 42.15386],
+      [-70.81401, 42.15382],
+      [-70.81408, 42.15377],
+      [-70.81429, 42.15368],
+      [-70.81451, 42.15344],
+      [-70.81482, 42.15324],
+      [-70.81493, 42.1532],
+      [-70.81509, 42.15322],
+      [-70.81515, 42.15323],
+      [-70.81554, 42.15334],
+      [-70.81575, 42.15346],
+      [-70.81622, 42.15362],
+      [-70.81641, 42.15368],
+      [-70.81665, 42.15371],
+      [-70.81677, 42.15375],
+      [-70.81771, 42.15459],
+      [-70.81784, 42.15464],
+      [-70.81795, 42.15463],
+      [-70.81823, 42.15457],
+      [-70.81842, 42.15448],
+      [-70.81856, 42.15446],
+      [-70.8189, 42.15441],
+      [-70.81983, 42.15437],
+      [-70.82003, 42.15437],
+      [-70.8201, 42.15441],
+      [-70.82019, 42.15482],
+      [-70.8202, 42.15487],
+      [-70.82018, 42.15492],
+      [-70.82012, 42.15496],
+      [-70.81984, 42.15513],
+      [-70.81975, 42.1552],
+      [-70.8197, 42.15527],
+      [-70.81969, 42.15534],
+      [-70.8197, 42.1554],
+      [-70.81974, 42.15547],
+      [-70.81993, 42.15557],
+      [-70.82026, 42.1556],
+      [-70.8203, 42.15562],
+      [-70.8204, 42.15571],
+      [-70.82038, 42.15574],
+      [-70.82039, 42.15576],
+      [-70.82045, 42.15576],
+      [-70.82052, 42.15581],
+      [-70.82067, 42.15583],
+      [-70.82138, 42.15588],
+      [-70.82147, 42.15588],
+      [-70.82164, 42.15576],
+      [-70.82175, 42.15572],
+      [-70.82219, 42.15581],
+      [-70.82269, 42.15584],
+      [-70.82284, 42.15584],
+      [-70.82357, 42.15572],
+      [-70.82381, 42.15567],
+      [-70.824, 42.15559],
+      [-70.82407, 42.15558],
+      [-70.82413, 42.15558],
+      [-70.82455, 42.15557],
+      [-70.8246, 42.15555],
+      [-70.82465, 42.15551],
+      [-70.82472, 42.1555],
+      [-70.82522, 42.15548],
+      [-70.82544, 42.15545],
+      [-70.82583, 42.15543],
+      [-70.82598, 42.15539],
+      [-70.82614, 42.1554],
+      [-70.82643, 42.15537],
+      [-70.82665, 42.15536],
+      [-70.82704, 42.15533],
+      [-70.82722, 42.15529],
+      [-70.82746, 42.15525],
+      [-70.82829, 42.15522],
+      [-70.82855, 42.15516],
+      [-70.82904, 42.15509],
+      [-70.82913, 42.1551],
+      [-70.82927, 42.15518],
+      [-70.82945, 42.15531],
+      [-70.82957, 42.15543],
+      [-70.82974, 42.15552],
+      [-70.82996, 42.15551],
+      [-70.83022, 42.15554],
+      [-70.83055, 42.1556],
+      [-70.8306, 42.15563],
+      [-70.83078, 42.15587],
+      [-70.83095, 42.15617],
+      [-70.83108, 42.15635],
+      [-70.83111, 42.15639],
+      [-70.83121, 42.15636],
+      [-70.83289, 42.156],
+      [-70.83401, 42.15575],
+      [-70.83429, 42.15571],
+      [-70.83458, 42.15568],
+      [-70.8349, 42.15567],
+      [-70.83499, 42.15566],
+      [-70.83499, 42.15558],
+      [-70.835, 42.15527],
+      [-70.83497, 42.15469],
+      [-70.83496, 42.15464],
+      [-70.83492, 42.15438],
+      [-70.83485, 42.1539],
+      [-70.83483, 42.15369],
+      [-70.83592, 42.15359],
+      [-70.83597, 42.15359],
+      [-70.83643, 42.15356],
+      [-70.83666, 42.15359],
+      [-70.83685, 42.15367],
+      [-70.83688, 42.15368],
+      [-70.83708, 42.15379],
+      [-70.83719, 42.15388],
+      [-70.83767, 42.15438],
+      [-70.83794, 42.15463],
+      [-70.83812, 42.15476],
+      [-70.83855, 42.15498],
+      [-70.83861, 42.155],
+      [-70.83921, 42.15521],
+      [-70.83936, 42.15528],
+      [-70.83953, 42.15538],
+      [-70.83964, 42.15549],
+      [-70.83977, 42.15563],
+      [-70.83984, 42.15575],
+      [-70.83987, 42.15585],
+      [-70.84039, 42.1558],
+      [-70.84122, 42.15577],
+      [-70.84137, 42.15575],
+      [-70.84153, 42.15569],
+      [-70.84229, 42.15516],
+      [-70.84245, 42.15507],
+      [-70.84272, 42.1549]
+    ]
+  }
+};
+
+/* Mile markers: [lng, lat, label] — placed at each mile. */
+const MILE_MARKERS = [
+  [-70.82991, 42.14729, '1'],
+  [-70.81263, 42.15152, '2'],
+  [-70.82496, 42.15549, '3'],
+  [-70.83958, 42.15543, '4']
+];
+
+/* 3. (OPTIONAL) Baked elevation profile: [[distanceMiles, elevationFeet], ...].
+      Leave empty [] to auto-fetch elevation on page load (works, but hits a
+      public elevation service per visitor). For a fast, reliable production
+      site, run the elevation tool once and paste its ELEVATION_PROFILE here. */
+const ELEVATION_GAIN_FT = 279;
+const ELEVATION_PROFILE = [[0,154],[0.04,128],[0.12,128],[0.22,135],[0.32,151],[0.39,151],[0.58,148],[0.7,131],[0.79,118],[0.83,144],[0.9,144],[0.97,128],[1.07,108],[1.14,108],[1.22,85],[1.28,85],[1.41,85],[1.47,85],[1.66,102],[1.76,92],[1.85,105],[2.05,115],[2.15,102],[2.18,85],[2.23,85],[2.27,85],[2.33,118],[2.42,118],[2.53,128],[2.62,131],[2.67,131],[2.71,131],[2.75,131],[2.77,131],[2.85,95],[2.95,135],[2.98,135],[3.05,115],[3.12,131],[3.22,131],[3.27,131],[3.35,131],[3.52,171],[3.57,171],[3.69,151],[3.8,135],[3.88,128],[3.98,128],[4.03,154],[4.12,154],[4.2,135]];
+
+/* Nav scroll state */
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 40);
+});
+
+/* Mapbox init with graceful fallback */
+let map = null, traceMarker = null, traceEl = null;
+function initMap(){
+  if (!window.mapboxgl || !MAPBOX_TOKEN || MAPBOX_TOKEN === 'YOUR_MAPBOX_ACCESS_TOKEN'){
+    document.getElementById('mapFallback').classList.add('show');
+    return;
+  }
+  mapboxgl.accessToken = MAPBOX_TOKEN;
+
+  const coords = COURSE.geometry.coordinates;
+  map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/outdoors-v12',
+    center: coords[0],
+    zoom: 13.5
+  });
+  map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+  map.scrollZoom.disable();
+
+  map.on('load', () => {
+    map.addSource('course', { type: 'geojson', data: COURSE });
+    map.addLayer({
+      id: 'course-casing', type: 'line', source: 'course',
+      layout: { 'line-cap':'round','line-join':'round' },
+      paint: { 'line-color':'#07224f','line-width':8 }
+    });
+    map.addLayer({
+      id: 'course-line', type: 'line', source: 'course',
+      layout: { 'line-cap':'round','line-join':'round' },
+      paint: { 'line-color':'#c8941f','line-width':4 }
+    });
+
+    const b = coords.reduce((bb,c)=>bb.extend(c), new mapboxgl.LngLatBounds(coords[0],coords[0]));
+    map.fitBounds(b, { padding: 60, duration: 0 });
+
+    const drop = (lngLat, color, label) => {
+      const el = document.createElement('div');
+      el.style.cssText =
+        'width:26px;height:26px;border-radius:50%;background:'+color+';border:3px solid #fff;'+
+        'box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;'+
+        'color:#fff;font-family:\'Big Shoulders Display\',sans-serif;font-size:13px;';
+      if (label) el.textContent = label;
+      new mapboxgl.Marker(el).setLngLat(lngLat).addTo(map);
+    };
+
+    drop(coords[0], '#22c55e');
+    drop(coords[coords.length-1], '#ef4444');
+    MILE_MARKERS.forEach(m => drop([m[0],m[1]], '#c8941f', m[2]));
+
+    // moving marker that follows the elevation-profile hover
+    traceEl = document.createElement('div');
+    traceEl.style.cssText =
+      'width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid #c8941f;'+
+      'box-shadow:0 0 0 5px rgba(200,148,31,.3);opacity:0;transition:opacity .12s;';
+    traceMarker = new mapboxgl.Marker(traceEl).setLngLat(coords[0]).addTo(map);
+  });
+}
+initMap();
+
+/* ---- Elevation profile ---- */
+function haversine(a,b){ // [lng,lat] -> meters
+  const R=6371000, toR=x=>x*Math.PI/180;
+  const dphi=toR(b[1]-a[1]), dl=toR(b[0]-a[0]);
+  const x=Math.sin(dphi/2)**2 + Math.cos(toR(a[1]))*Math.cos(toR(b[1]))*Math.sin(dl/2)**2;
+  return 2*R*Math.asin(Math.sqrt(x));
+}
+
+/* Distance-along-route -> [lng,lat], so hovering the profile can pin the map */
+const ROUTE_COORDS = COURSE.geometry.coordinates;
+const CUM = [0];
+for(let i=1;i<ROUTE_COORDS.length;i++) CUM.push(CUM[i-1]+haversine(ROUTE_COORDS[i-1],ROUTE_COORDS[i]));
+function coordAtMiles(mi){
+  const target = mi*1609.344;
+  if(target<=0) return ROUTE_COORDS[0];
+  if(target>=CUM[CUM.length-1]) return ROUTE_COORDS[ROUTE_COORDS.length-1];
+  let i=1; while(i<CUM.length && CUM[i]<target) i++;
+  const seg=CUM[i]-CUM[i-1], f=seg>0?(target-CUM[i-1])/seg:0;
+  const a=ROUTE_COORDS[i-1], b=ROUTE_COORDS[i];
+  return [a[0]+(b[0]-a[0])*f, a[1]+(b[1]-a[1])*f];
+}
+
+function renderElevation(profile, knownGain){
+  // profile: [[distMi, eleFt], ...]
+  const chart=document.getElementById('elevChart');
+  const W=1000, H=240, padL=46, padR=20, padT=18, padB=30;
+  const maxD=profile[profile.length-1][0];
+  const eles=profile.map(p=>p[1]);
+  let lo=Math.min(...eles), hi=Math.max(...eles);
+  if(hi-lo<10){ const mid=(hi+lo)/2; lo=mid-5; hi=mid+5; } // avoid flat-line look
+  const span=hi-lo;
+  const X=d=>padL+(d/maxD)*(W-padL-padR);
+  const Y=e=>H-padB-((e-lo)/span)*(H-padT-padB);
+
+  // gain/loss
+  let gain=0, loss=0;
+  for(let i=1;i<profile.length;i++){ const d=profile[i][1]-profile[i-1][1]; if(d>0) gain+=d; else loss+=-d; }
+  const gainShown = (knownGain!=null) ? Math.round(knownGain) : Math.round(gain);
+
+  // build line + highlight climbing segments in a brighter gold
+  const pts=profile.map(p=>[X(p[0]),Y(p[1])]);
+  const linePts=pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const areaPts='M '+X(0).toFixed(1)+','+(H-padB)+' L '+pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' L ')+' L '+X(maxD).toFixed(1)+','+(H-padB)+' Z';
+
+  let climbs='';
+  for(let i=1;i<profile.length;i++){
+    if(profile[i][1]-profile[i-1][1] > 0.5){
+      climbs+=`<line x1="${pts[i-1][0].toFixed(1)}" y1="${pts[i-1][1].toFixed(1)}" x2="${pts[i][0].toFixed(1)}" y2="${pts[i][1].toFixed(1)}" stroke="#e0ad3a" stroke-width="4" stroke-linecap="round"/>`;
+    }
+  }
+
+  // gridlines (3 horizontal)
+  let grid='';
+  for(let k=0;k<=2;k++){ const e=lo+span*k/2; const y=Y(e); grid+=`<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,.08)"/><text x="${padL-8}" y="${(y+4).toFixed(1)}" fill="rgba(255,255,255,.45)" font-size="13" font-family="Archivo" text-anchor="end">${Math.round(e)}</text>`; }
+  // mile ticks
+  let ticks='';
+  for(let mi=0; mi<=Math.floor(maxD); mi++){ const x=X(mi); ticks+=`<text x="${x.toFixed(1)}" y="${H-8}" fill="rgba(255,255,255,.45)" font-size="13" font-family="Archivo" text-anchor="middle">${mi}</text>`; }
+
+  chart.innerHTML=`<svg id="elevSvg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    ${grid}
+    <path d="${areaPts}" fill="rgba(200,148,31,.16)"/>
+    <polyline points="${linePts}" fill="none" stroke="#c8941f" stroke-width="2.5"/>
+    ${climbs}
+    ${ticks}
+    <line id="elevCursor" x1="0" y1="${padT}" x2="0" y2="${H-padB}" stroke="rgba(255,255,255,.5)" stroke-width="1" style="opacity:0"/>
+    <circle id="elevDot" r="5" fill="#e0ad3a" stroke="#fff" stroke-width="2" style="opacity:0"/>
+    <rect id="elevHit" x="${padL}" y="0" width="${W-padL-padR}" height="${H}" fill="transparent"/>
+  </svg>
+  <div class="elev-tip" id="elevTip"></div>`;
+
+  document.getElementById('elevStats').innerHTML =
+    `<span><b>+${gainShown} ft</b>gain</span>`+
+    `<span><b>${Math.round(hi)} ft</b>high</span>`+
+    `<span><b>${Math.round(lo)} ft</b>low</span>`;
+
+  // fill the course stat too if still a placeholder
+  const statEl=document.getElementById('statElev');
+  if(statEl && statEl.textContent.indexOf('?')>-1) statEl.textContent='+'+gainShown+' ft';
+
+  // interactivity
+  const svg=document.getElementById('elevSvg');
+  const hit=document.getElementById('elevHit');
+  const cursor=document.getElementById('elevCursor');
+  const dot=document.getElementById('elevDot');
+  const tip=document.getElementById('elevTip');
+
+  function move(clientX){
+    const rect=svg.getBoundingClientRect();
+    const sx=(clientX-rect.left)/rect.width*W;       // svg-space x
+    const d=Math.max(0,Math.min(maxD,(sx-padL)/(W-padL-padR)*maxD));
+    // nearest profile point by distance
+    let idx=0,best=1e9;
+    for(let i=0;i<profile.length;i++){ const diff=Math.abs(profile[i][0]-d); if(diff<best){best=diff;idx=i;} }
+    const px=pts[idx][0], py=pts[idx][1];
+    cursor.setAttribute('x1',px); cursor.setAttribute('x2',px); cursor.style.opacity=1;
+    dot.setAttribute('cx',px); dot.setAttribute('cy',py); dot.style.opacity=1;
+    tip.style.left=(px/W*rect.width)+'px';
+    tip.style.top=(py/H*rect.height)+'px';
+    tip.innerHTML=`<b>${profile[idx][0].toFixed(1)} mi</b><br>${Math.round(profile[idx][1])} ft`;
+    tip.style.opacity=1;
+    // pin the matching spot on the map
+    if(traceMarker){ traceMarker.setLngLat(coordAtMiles(profile[idx][0])); traceEl.style.opacity=1; }
+  }
+  function hide(){ cursor.style.opacity=0; dot.style.opacity=0; tip.style.opacity=0; if(traceEl) traceEl.style.opacity=0; }
+  hit.addEventListener('mousemove', e=>move(e.clientX));
+  hit.addEventListener('mouseleave', hide);
+  hit.addEventListener('touchmove', e=>{ if(e.touches[0]) move(e.touches[0].clientX); }, {passive:true});
+  hit.addEventListener('touchend', hide);
+}
+
+async function fetchElevation(){
+  const coords = COURSE.geometry.coordinates;
+  const FT=3.28084;
+  // try cache
+  const key='elev_'+coords.length+'_'+coords[0].join()+'_'+coords[coords.length-1].join();
+  try{ const c=localStorage.getItem(key); if(c){ renderElevation(JSON.parse(c)); return; } }catch(e){}
+
+  async function topo(){
+    const out=[];
+    for(let i=0;i<coords.length;i+=100){
+      const locs=coords.slice(i,i+100).map(p=>p[1]+','+p[0]).join('|');
+      const r=await fetch('https://api.opentopodata.org/v1/ned10m?locations='+encodeURIComponent(locs));
+      if(!r.ok) throw new Error('topo');
+      const j=await r.json(); j.results.forEach(x=>out.push(x.elevation));
+      if(i+100<coords.length) await new Promise(s=>setTimeout(s,1100));
+    }
+    return out;
+  }
+  async function openElev(){
+    const out=[];
+    for(let i=0;i<coords.length;i+=200){
+      const batch=coords.slice(i,i+200).map(p=>({latitude:p[1],longitude:p[0]}));
+      const r=await fetch('https://api.open-elevation.com/api/v1/lookup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({locations:batch})});
+      if(!r.ok) throw new Error('openelev');
+      const j=await r.json(); j.results.forEach(x=>out.push(x.elevation));
+    }
+    return out;
+  }
+
+  let eleM;
+  try{ eleM=await topo(); }
+  catch(e){ try{ eleM=await openElev(); }catch(e2){ return false; } }
+  if(eleM.length!==coords.length || eleM.some(v=>v==null)) return false;
+
+  // build downsampled profile (~80 pts)
+  const distMi=[0]; let cum=0;
+  for(let i=1;i<coords.length;i++){ cum+=haversine(coords[i-1],coords[i]); distMi.push(cum/1609.344); }
+  const step=Math.max(1,Math.ceil(coords.length/80));
+  const profile=[];
+  for(let i=0;i<coords.length;i+=step) profile.push([+distMi[i].toFixed(2), +(eleM[i]*FT).toFixed(1)]);
+  const last=coords.length-1;
+  if(profile[profile.length-1][0]!==+distMi[last].toFixed(2)) profile.push([+distMi[last].toFixed(2), +(eleM[last]*FT).toFixed(1)]);
+
+  try{ localStorage.setItem(key, JSON.stringify(profile)); }catch(e){}
+  renderElevation(profile);
+  return true;
+}
+
+(function initElevation(){
+  const box=document.getElementById('elevation');
+  if(ELEVATION_PROFILE && ELEVATION_PROFILE.length>1){
+    renderElevation(ELEVATION_PROFILE, ELEVATION_GAIN_FT);
+    return;
+  }
+  fetchElevation().then(ok=>{
+    if(!ok){ document.getElementById('elevMsg').textContent='Elevation data unavailable right now.'; }
+  });
+})();
+</script>
+</body>
+</html>

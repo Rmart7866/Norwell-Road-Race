@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elevation Computer — Norwell Labor Day Road Race</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#0b1d39;--navy-deep:#050f22;--accent:#c8941f;--accent-bright:#e0ad3a;--paper:#f3f6fa;}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Archivo',sans-serif;background:var(--navy-deep);color:#fff;padding:40px 20px;min-height:100vh}
+.wrap{max-width:760px;margin:0 auto}
+h1{font-family:'Anton',sans-serif;text-transform:uppercase;font-size:clamp(1.8rem,5vw,2.6rem);line-height:1;margin-bottom:8px}
+h1 em{font-style:normal;color:var(--accent-bright)}
+.sub{color:rgba(255,255,255,.6);margin-bottom:28px;font-size:14px}
+button{font-family:'Archivo',sans-serif;background:var(--accent);color:#fff;font-weight:800;letter-spacing:.06em;text-transform:uppercase;font-size:14px;padding:16px 32px;border:0;cursor:pointer;transition:background .2s}
+button:hover{background:var(--accent-bright)}
+button:disabled{opacity:.5;cursor:default}
+#status{margin-top:18px;color:var(--accent-bright);font-size:13px;letter-spacing:.04em;min-height:18px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.12);margin-top:28px;display:none}
+.stats.show{display:grid}
+@media(max-width:560px){.stats{grid-template-columns:1fr 1fr}}
+.stat{background:var(--navy);padding:18px}
+.stat .l{color:rgba(255,255,255,.5);font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:6px}
+.stat .v{font-family:'Anton',sans-serif;font-size:26px;color:var(--accent-bright)}
+#profileBox{margin-top:24px;background:var(--navy);border:1px solid rgba(255,255,255,.12);padding:20px;display:none}
+#profileBox.show{display:block}
+#profileBox h3{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-bright);margin-bottom:14px;font-weight:800}
+.paste{margin-top:24px;background:#000;border:1px solid rgba(255,255,255,.15);padding:16px;font-family:ui-monospace,monospace;font-size:12px;color:#9fe;white-space:pre-wrap;word-break:break-word;display:none}
+.paste.show{display:block}
+.note{margin-top:16px;color:rgba(255,255,255,.45);font-size:12px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Elevation <em>Computer</em></h1>
+  <p class="sub">Pulls real ground elevation for all 249 points of your 4.2 mi route, then totals the climb. Runs in your browser. Click once.</p>
+  <button id="go">Compute elevation</button>
+  <div id="status"></div>
+
+  <div class="stats" id="stats">
+    <div class="stat"><div class="l">Gain</div><div class="v" id="gain">—</div></div>
+    <div class="stat"><div class="l">Loss</div><div class="v" id="loss">—</div></div>
+    <div class="stat"><div class="l">Low</div><div class="v" id="low">—</div></div>
+    <div class="stat"><div class="l">High</div><div class="v" id="high">—</div></div>
+  </div>
+
+  <div id="profileBox">
+    <h3>Elevation Profile</h3>
+    <div id="profile"></div>
+  </div>
+
+  <button id="dl" style="margin-top:20px;display:none;background:transparent;border:2px solid var(--accent-bright);color:#fff">Download GPX (with elevation)</button>
+
+  <div class="paste" id="paste"></div>
+
+  <div class="note">Source: Open-Topo-Data (USGS NED 10m), with Open-Elevation as fallback. Gain is the sum of all uphill segments. Once it finishes, paste the value into the race site's Elevation stat, or send the snippet back to bake an elevation profile into the page.</div>
+</div>
+
+<script>
+const ROUTE = [
+  [-70.83988,42.15585],
+  [-70.83987,42.15585],
+  [-70.83984,42.15575],
+  [-70.83977,42.15563],
+  [-70.83964,42.15549],
+  [-70.83953,42.15538],
+  [-70.83936,42.15528],
+  [-70.83921,42.15521],
+  [-70.83861,42.155],
+  [-70.83855,42.15498],
+  [-70.83812,42.15476],
+  [-70.83794,42.15463],
+  [-70.83767,42.15438],
+  [-70.83719,42.15388],
+  [-70.83708,42.15379],
+  [-70.83688,42.15368],
+  [-70.83685,42.15367],
+  [-70.83666,42.15359],
+  [-70.83643,42.15356],
+  [-70.83592,42.15359],
+  [-70.83496,42.15367],
+  [-70.83483,42.15369],
+  [-70.83481,42.1535],
+  [-70.83479,42.15329],
+  [-70.83478,42.15303],
+  [-70.83476,42.15276],
+  [-70.83475,42.15244],
+  [-70.83473,42.15205],
+  [-70.83471,42.15151],
+  [-70.8347,42.15135],
+  [-70.83466,42.15001],
+  [-70.83462,42.14973],
+  [-70.83454,42.14946],
+  [-70.83445,42.14921],
+  [-70.83428,42.14885],
+  [-70.83403,42.14835],
+  [-70.83393,42.14816],
+  [-70.83379,42.14789],
+  [-70.83361,42.14754],
+  [-70.83356,42.14746],
+  [-70.83343,42.14719],
+  [-70.83336,42.14698],
+  [-70.83336,42.14688],
+  [-70.83337,42.14681],
+  [-70.83338,42.14678],
+  [-70.83316,42.14674],
+  [-70.83293,42.14674],
+  [-70.83249,42.14678],
+  [-70.83212,42.14682],
+  [-70.83192,42.14684],
+  [-70.83168,42.14688],
+  [-70.83117,42.14695],
+  [-70.83099,42.14699],
+  [-70.83085,42.14703],
+  [-70.83078,42.14704],
+  [-70.83041,42.14714],
+  [-70.82983,42.14731],
+  [-70.82957,42.14738],
+  [-70.82911,42.14751],
+  [-70.82879,42.14759],
+  [-70.82866,42.14763],
+  [-70.82818,42.14778],
+  [-70.82783,42.14785],
+  [-70.82759,42.14788],
+  [-70.82746,42.14788],
+  [-70.82734,42.14788],
+  [-70.82713,42.14786],
+  [-70.82682,42.14779],
+  [-70.82653,42.14767],
+  [-70.82606,42.14744],
+  [-70.8259,42.14737],
+  [-70.82585,42.14736],
+  [-70.82556,42.14727],
+  [-70.82534,42.14725],
+  [-70.8249,42.14727],
+  [-70.82479,42.14728],
+  [-70.82397,42.14722],
+  [-70.82329,42.14717],
+  [-70.82297,42.14715],
+  [-70.82256,42.14714],
+  [-70.8223,42.14715],
+  [-70.8221,42.14718],
+  [-70.82183,42.14725],
+  [-70.82172,42.14727],
+  [-70.82143,42.14739],
+  [-70.82123,42.14746],
+  [-70.82089,42.14758],
+  [-70.82008,42.14787],
+  [-70.81963,42.14803],
+  [-70.81829,42.14859],
+  [-70.81788,42.14879],
+  [-70.81767,42.14897],
+  [-70.81745,42.14914],
+  [-70.81708,42.14931],
+  [-70.81671,42.14938],
+  [-70.81623,42.14942],
+  [-70.81596,42.14946],
+  [-70.81576,42.14951],
+  [-70.81536,42.14965],
+  [-70.81517,42.14977],
+  [-70.81482,42.15004],
+  [-70.81443,42.15038],
+  [-70.81424,42.1505],
+  [-70.81262,42.15152],
+  [-70.81189,42.15199],
+  [-70.81184,42.15203],
+  [-70.81194,42.15218],
+  [-70.81196,42.1526],
+  [-70.81201,42.15283],
+  [-70.81208,42.15302],
+  [-70.81231,42.15337],
+  [-70.81239,42.15334],
+  [-70.81244,42.15334],
+  [-70.8126,42.15353],
+  [-70.81264,42.15357],
+  [-70.8127,42.15359],
+  [-70.81276,42.15359],
+  [-70.81295,42.15355],
+  [-70.81309,42.15357],
+  [-70.8132,42.1536],
+  [-70.81352,42.15384],
+  [-70.81359,42.15387],
+  [-70.81389,42.15386],
+  [-70.81401,42.15382],
+  [-70.81408,42.15377],
+  [-70.81429,42.15368],
+  [-70.81451,42.15344],
+  [-70.81482,42.15324],
+  [-70.81493,42.1532],
+  [-70.81509,42.15322],
+  [-70.81515,42.15323],
+  [-70.81554,42.15334],
+  [-70.81575,42.15346],
+  [-70.81622,42.15362],
+  [-70.81641,42.15368],
+  [-70.81665,42.15371],
+  [-70.81677,42.15375],
+  [-70.81771,42.15459],
+  [-70.81784,42.15464],
+  [-70.81795,42.15463],
+  [-70.81823,42.15457],
+  [-70.81842,42.15448],
+  [-70.81856,42.15446],
+  [-70.8189,42.15441],
+  [-70.81983,42.15437],
+  [-70.82003,42.15437],
+  [-70.8201,42.15441],
+  [-70.82019,42.15482],
+  [-70.8202,42.15487],
+  [-70.82018,42.15492],
+  [-70.82012,42.15496],
+  [-70.81984,42.15513],
+  [-70.81975,42.1552],
+  [-70.8197,42.15527],
+  [-70.81969,42.15534],
+  [-70.8197,42.1554],
+  [-70.81974,42.15547],
+  [-70.81993,42.15557],
+  [-70.82026,42.1556],
+  [-70.8203,42.15562],
+  [-70.8204,42.15571],
+  [-70.82038,42.15574],
+  [-70.82039,42.15576],
+  [-70.82045,42.15576],
+  [-70.82052,42.15581],
+  [-70.82067,42.15583],
+  [-70.82138,42.15588],
+  [-70.82147,42.15588],
+  [-70.82164,42.15576],
+  [-70.82175,42.15572],
+  [-70.82219,42.15581],
+  [-70.82269,42.15584],
+  [-70.82284,42.15584],
+  [-70.82357,42.15572],
+  [-70.82381,42.15567],
+  [-70.824,42.15559],
+  [-70.82407,42.15558],
+  [-70.82413,42.15558],
+  [-70.82455,42.15557],
+  [-70.8246,42.15555],
+  [-70.82465,42.15551],
+  [-70.82472,42.1555],
+  [-70.82522,42.15548],
+  [-70.82544,42.15545],
+  [-70.82583,42.15543],
+  [-70.82598,42.15539],
+  [-70.82614,42.1554],
+  [-70.82643,42.15537],
+  [-70.82665,42.15536],
+  [-70.82704,42.15533],
+  [-70.82722,42.15529],
+  [-70.82746,42.15525],
+  [-70.82829,42.15522],
+  [-70.82855,42.15516],
+  [-70.82904,42.15509],
+  [-70.82913,42.1551],
+  [-70.82927,42.15518],
+  [-70.82945,42.15531],
+  [-70.82957,42.15543],
+  [-70.82974,42.15552],
+  [-70.82996,42.15551],
+  [-70.83022,42.15554],
+  [-70.83055,42.1556],
+  [-70.8306,42.15563],
+  [-70.83078,42.15587],
+  [-70.83095,42.15617],
+  [-70.83108,42.15635],
+  [-70.83111,42.15639],
+  [-70.83121,42.15636],
+  [-70.83289,42.156],
+  [-70.83401,42.15575],
+  [-70.83429,42.15571],
+  [-70.83458,42.15568],
+  [-70.8349,42.15567],
+  [-70.83499,42.15566],
+  [-70.83499,42.15558],
+  [-70.835,42.15527],
+  [-70.83497,42.15469],
+  [-70.83496,42.15464],
+  [-70.83492,42.15438],
+  [-70.83485,42.1539],
+  [-70.83483,42.15369],
+  [-70.83592,42.15359],
+  [-70.83597,42.15359],
+  [-70.83643,42.15356],
+  [-70.83666,42.15359],
+  [-70.83685,42.15367],
+  [-70.83688,42.15368],
+  [-70.83708,42.15379],
+  [-70.83719,42.15388],
+  [-70.83767,42.15438],
+  [-70.83794,42.15463],
+  [-70.83812,42.15476],
+  [-70.83855,42.15498],
+  [-70.83861,42.155],
+  [-70.83921,42.15521],
+  [-70.83936,42.15528],
+  [-70.83953,42.15538],
+  [-70.83964,42.15549],
+  [-70.83977,42.15563],
+  [-70.83984,42.15575],
+  [-70.83987,42.15585],
+  [-70.84039,42.1558],
+  [-70.84122,42.15577],
+  [-70.84137,42.15575],
+  [-70.84153,42.15569],
+  [-70.84229,42.15516],
+  [-70.84245,42.15507],
+  [-70.84272,42.1549]
+];
+
+const FT = 3.28084;
+const $ = id => document.getElementById(id);
+
+function haversine(a,b){ // [lng,lat] -> meters
+  const R=6371000, toR=x=>x*Math.PI/180;
+  const dphi=toR(b[1]-a[1]), dl=toR(b[0]-a[0]);
+  const x=Math.sin(dphi/2)**2 + Math.cos(toR(a[1]))*Math.cos(toR(b[1]))*Math.sin(dl/2)**2;
+  return 2*R*Math.asin(Math.sqrt(x));
+}
+
+async function fetchOpenTopo(points){
+  const out=[];
+  for(let i=0;i<points.length;i+=100){
+    const batch=points.slice(i,i+100);
+    const locs=batch.map(p=>p[1]+","+p[0]).join("|"); // lat,lng
+    const url="https://api.opentopodata.org/v1/ned10m?locations="+encodeURIComponent(locs);
+    $("status").textContent="Fetching elevation "+Math.min(i+100,points.length)+" / "+points.length+" ...";
+    const r=await fetch(url);
+    if(!r.ok) throw new Error("opentopo "+r.status);
+    const j=await r.json();
+    j.results.forEach(x=>out.push(x.elevation));
+    if(i+100<points.length) await new Promise(s=>setTimeout(s,1100)); // rate limit 1/s
+  }
+  return out;
+}
+
+async function fetchOpenElev(points){
+  const out=[];
+  for(let i=0;i<points.length;i+=200){
+    const batch=points.slice(i,i+200).map(p=>({latitude:p[1],longitude:p[0]}));
+    $("status").textContent="Fallback source "+Math.min(i+200,points.length)+" / "+points.length+" ...";
+    const r=await fetch("https://api.open-elevation.com/api/v1/lookup",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({locations:batch})
+    });
+    if(!r.ok) throw new Error("openelev "+r.status);
+    const j=await r.json();
+    j.results.forEach(x=>out.push(x.elevation));
+  }
+  return out;
+}
+
+function drawProfile(dist, ele){ // dist miles[], ele ft[]
+  const W=680,H=180,pad=34;
+  const maxD=dist[dist.length-1];
+  const lo=Math.min(...ele), hi=Math.max(...ele);
+  const span=Math.max(hi-lo,1);
+  const x=d=>pad+(d/maxD)*(W-pad*2);
+  const y=e=>H-pad-((e-lo)/span)*(H-pad*2);
+  let pts=dist.map((d,i)=>x(d)+","+y(ele[i])).join(" ");
+  let area="M "+x(0)+","+(H-pad)+" L "+pts.split(" ").join(" L ")+" L "+x(maxD)+","+(H-pad)+" Z";
+  const svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto">
+    <line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" stroke="rgba(255,255,255,.2)"/>
+    <path d="${area}" fill="rgba(200,148,31,.18)"/>
+    <polyline points="${pts}" fill="none" stroke="#e0ad3a" stroke-width="2.5"/>
+    <text x="${pad}" y="${H-10}" fill="rgba(255,255,255,.5)" font-size="11" font-family="Archivo">0 mi</text>
+    <text x="${W-pad}" y="${H-10}" fill="rgba(255,255,255,.5)" font-size="11" font-family="Archivo" text-anchor="end">${maxD.toFixed(1)} mi</text>
+    <text x="6" y="${pad}" fill="rgba(255,255,255,.5)" font-size="11" font-family="Archivo">${Math.round(hi)} ft</text>
+    <text x="6" y="${H-pad}" fill="rgba(255,255,255,.5)" font-size="11" font-family="Archivo">${Math.round(lo)} ft</text>
+  </svg>`;
+  $("profile").innerHTML=svg;
+}
+
+$("go").addEventListener("click", async ()=>{
+  $("go").disabled=true;
+  try{
+    let eleM;
+    try{ eleM=await fetchOpenTopo(ROUTE); }
+    catch(e){ $("status").textContent="Primary source failed, trying fallback..."; eleM=await fetchOpenElev(ROUTE); }
+
+    if(eleM.length!==ROUTE.length || eleM.some(v=>v==null)) throw new Error("incomplete elevation data");
+
+    const eleFt=eleM.map(m=>m*FT);
+    // cumulative distance in miles
+    const distMi=[0]; let cum=0;
+    for(let i=1;i<ROUTE.length;i++){ cum+=haversine(ROUTE[i-1],ROUTE[i]); distMi.push(cum/1609.344); }
+    // gain/loss with small noise threshold (2 ft)
+    let gain=0,loss=0;
+    for(let i=1;i<eleFt.length;i++){ const d=eleFt[i]-eleFt[i-1]; if(d>2) gain+=d; else if(d<-2) loss+=-d; }
+    const low=Math.min(...eleFt), high=Math.max(...eleFt);
+
+    $("gain").textContent="+"+Math.round(gain)+" ft";
+    $("loss").textContent="-"+Math.round(loss)+" ft";
+    $("low").textContent=Math.round(low)+" ft";
+    $("high").textContent=Math.round(high)+" ft";
+    $("stats").classList.add("show");
+
+    drawProfile(distMi, eleFt);
+    $("profileBox").classList.add("show");
+
+    // build paste snippet (downsampled profile to ~60 points)
+    const step=Math.ceil(ROUTE.length/60);
+    const prof=[]; for(let i=0;i<ROUTE.length;i+=step) prof.push([+distMi[i].toFixed(2),Math.round(eleFt[i])]);
+    if(prof[prof.length-1][0]!==+distMi[distMi.length-1].toFixed(2)) prof.push([+distMi[distMi.length-1].toFixed(2),Math.round(eleFt[eleFt.length-1])]);
+    $("paste").textContent =
+      "Elevation gain: +"+Math.round(gain)+" ft\n\n"+
+      "To bake the profile into the race site, send this back:\n"+
+      "ELEVATION_PROFILE = "+JSON.stringify(prof);
+    $("paste").classList.add("show");
+    $("status").textContent="Done.";
+
+    // enable GPX-with-elevation download
+    const dl=$("dl");
+    dl.style.display="inline-block";
+    dl.onclick=()=>{
+      let g='<?xml version="1.0" encoding="UTF-8"?>\n';
+      g+='<gpx version="1.1" creator="Norwell Labor Day Road Race" xmlns="http://www.topografix.com/GPX/1/1">\n';
+      g+='  <metadata><name>Norwell Labor Day Road Race - 4.2 mi</name></metadata>\n';
+      g+='  <trk><name>Norwell Labor Day Road Race</name><trkseg>\n';
+      for(let i=0;i<ROUTE.length;i++){
+        g+='    <trkpt lat="'+ROUTE[i][1]+'" lon="'+ROUTE[i][0]+'"><ele>'+eleM[i].toFixed(1)+'</ele></trkpt>\n';
+      }
+      g+='  </trkseg></trk>\n</gpx>\n';
+      const blob=new Blob([g],{type:"application/gpx+xml"});
+      const a=document.createElement("a");
+      a.href=URL.createObjectURL(blob);
+      a.download="norwell-labor-day-route-elevation.gpx";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    };
+  }catch(err){
+    $("status").textContent="Couldn't fetch elevation ("+err.message+"). Both public services can be rate-limited or briefly down — wait a minute and try again.";
+    $("go").disabled=false;
+  }
+});
+</script>
+</body>
+</html>
